@@ -1,0 +1,69 @@
+# 48 seleções da Copa do Mundo 2026 — SORTEIO OFICIAL (5 dez 2025).
+# Composição reconstruída dos confrontos reais no dataset martj42 e conferida
+# com o sorteio oficial (todas as 12 letras batem).
+# 'pt' = nome em português | 'ds' = nome exato no dataset | 'conf' = confederação
+# host: true = país-sede (México A, Canadá B, EUA D).
+
+hosts: [Mexico, Canada, United States]
+
+groups:
+  A:
+    - {pt: "México",        ds: "Mexico",         conf: CONCACAF, host: true}
+    - {pt: "Coreia do Sul", ds: "South Korea",    conf: AFC}
+    - {pt: "África do Sul", ds: "South Africa",   conf: CAF}
+    - {pt: "Tchéquia",      ds: "Czech Republic", conf: UEFA}
+  B:
+    - {pt: "Canadá",  ds: "Canada",                 conf: CONCACAF, host: true}
+    - {pt: "Suíça",   ds: "Switzerland",            conf: UEFA}
+    - {pt: "Catar",   ds: "Qatar",                  conf: AFC}
+    - {pt: "Bósnia e Herzegovina", ds: "Bosnia and Herzegovina", conf: UEFA}
+  C:
+    - {pt: "Brasil",   ds: "Brazil",   conf: CONMEBOL}
+    - {pt: "Marrocos", ds: "Morocco",  conf: CAF}
+    - {pt: "Escócia",  ds: "Scotland", conf: UEFA}
+    - {pt: "Haiti",    ds: "Haiti",    conf: CONCACAF}
+  D:
+    - {pt: "Estados Unidos", ds: "United States", conf: CONCACAF, host: true}
+    - {pt: "Paraguai",       ds: "Paraguay",      conf: CONMEBOL}
+    - {pt: "Austrália",      ds: "Australia",     conf: AFC}
+    - {pt: "Turquia",        ds: "Turkey",        conf: UEFA}
+  E:
+    - {pt: "Alemanha",        ds: "Germany",     conf: UEFA}
+    - {pt: "Equador",         ds: "Ecuador",     conf: CONMEBOL}
+    - {pt: "Costa do Marfim", ds: "Ivory Coast", conf: CAF}
+    - {pt: "Curaçao",         ds: "Curaçao",     conf: CONCACAF}
+  F:
+    - {pt: "Países Baixos", ds: "Netherlands", conf: UEFA}
+    - {pt: "Japão",         ds: "Japan",       conf: AFC}
+    - {pt: "Tunísia",       ds: "Tunisia",     conf: CAF}
+    - {pt: "Suécia",        ds: "Sweden",      conf: UEFA}
+  G:
+    - {pt: "Bélgica",       ds: "Belgium",     conf: UEFA}
+    - {pt: "Irã",           ds: "Iran",        conf: AFC}
+    - {pt: "Egito",         ds: "Egypt",       conf: CAF}
+    - {pt: "Nova Zelândia", ds: "New Zealand", conf: OFC}
+  H:
+    - {pt: "Espanha",        ds: "Spain",        conf: UEFA}
+    - {pt: "Uruguai",        ds: "Uruguay",      conf: CONMEBOL}
+    - {pt: "Arábia Saudita", ds: "Saudi Arabia", conf: AFC}
+    - {pt: "Cabo Verde",     ds: "Cape Verde",   conf: CAF}
+  I:
+    - {pt: "França",  ds: "France",  conf: UEFA}
+    - {pt: "Senegal", ds: "Senegal", conf: CAF}
+    - {pt: "Noruega", ds: "Norway",  conf: UEFA}
+    - {pt: "Iraque",  ds: "Iraq",    conf: AFC}
+  J:
+    - {pt: "Argentina", ds: "Argentina", conf: CONMEBOL}
+    - {pt: "Áustria",   ds: "Austria",   conf: UEFA}
+    - {pt: "Argélia",   ds: "Algeria",   conf: CAF}
+    - {pt: "Jordânia",  ds: "Jordan",    conf: AFC}
+  K:
+    - {pt: "Portugal",    ds: "Portugal",   conf: UEFA}
+    - {pt: "Colômbia",    ds: "Colombia",   conf: CONMEBOL}
+    - {pt: "Uzbequistão", ds: "Uzbekistan", conf: AFC}
+    - {pt: "Rep. D. do Congo", ds: "DR Congo", conf: CAF}
+  L:
+    - {pt: "Inglaterra", ds: "England", conf: UEFA}
+    - {pt: "Croácia",    ds: "Croatia", conf: UEFA}
+    - {pt: "Panamá",     ds: "Panama",  conf: CONCACAF}
+    - {pt: "Gana",       ds: "Ghana",   conf: CAF}
