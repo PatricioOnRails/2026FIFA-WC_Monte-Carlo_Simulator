@@ -47,14 +47,16 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--fast", action="store_true", help="reusa tabelas em cache")
     ap.add_argument("--sims", type=int, default=config.N_SIMS)
+    ap.add_argument("--seed", type=int, default=config.SEED,
+                    help="semente aleatória para gerar resultados reproduzíveis")
     args = ap.parse_args()
 
     names.check()
     tables = build_tables(args.fast)
 
-    print(f"\nSimulando {args.sims:,} torneios...")
+    print(f"\nSimulando {args.sims:,} torneios com seed {args.seed}...")
     t0 = time.time()
-    res = simulate.simulate(tables, n_sims=args.sims)
+    res = simulate.simulate(tables, n_sims=args.sims, seed=args.seed)
     print(f"  Monte Carlo: {time.time()-t0:.1f}s")
 
     mc_df = report.generate(tables, res)

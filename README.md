@@ -63,6 +63,101 @@ The Dixon-Coles and Elo components are blended dynamically:
 
 The score CDF is generated on demand with NumPy. The implementation computes independent Poisson score probabilities, applies the Dixon-Coles tau correction for low-score cells, normalizes the grid, flattens it, and samples scores from the cumulative distribution. This avoids calling `penaltyblog` inside the simulation loop while still preserving Dixon-Coles behavior.
 
+### Output Examples
+
+After completing 50,000 Monte Carlo simulations, the reporting layer aggregates tournament outcomes into machine-readable probability tables and summary artifacts. A representative JSON-style output would follow the structure below:
+
+```json
+{
+  "metadata": {
+    "competition": "FIFA World Cup 2026",
+    "simulations": 50000,
+    "model": {
+      "goal_model": "Dixon-Coles",
+      "rating_model": "Elo",
+      "dynamic_elo_updates": true,
+      "score_grid_max_goals": 10
+    }
+  },
+  "champion_probabilities": {
+    "Brazil": 0.1524,
+    "France": 0.1378,
+    "Argentina": 0.1186,
+    "England": 0.0942,
+    "Spain": 0.0831
+  },
+  "finalist_probabilities": {
+    "Brazil": 0.2846,
+    "France": 0.2614,
+    "Argentina": 0.2312,
+    "England": 0.1988,
+    "Spain": 0.1765
+  },
+  "stage_probabilities": {
+    "Brazil": {
+      "group_winner": 0.6142,
+      "knockout": 0.9186,
+      "round_of_16": 0.9186,
+      "quarterfinal": 0.6128,
+      "semifinal": 0.4024,
+      "final": 0.2846,
+      "runner_up": 0.1322,
+      "champion": 0.1524
+    }
+  },
+  "goal_summary": {
+    "Brazil": {
+      "avg_goals_for_per_match": 1.84,
+      "avg_goals_against_per_match": 0.91
+    },
+    "France": {
+      "avg_goals_for_per_match": 1.79,
+      "avg_goals_against_per_match": 0.94
+    }
+  }
+}
+```
+
+The exact field names depend on the generated artifact being consumed. CSV outputs prioritize tabular stage probabilities, while Markdown outputs present the same estimates in a compact human-readable format.
+
+### Results Interpretation Guide
+
+Each reported probability should be interpreted as the empirical frequency of that outcome across the simulated tournament universe. For example, if a team has a `0.1500` champion probability, the model observed that team winning approximately 15% of the 50,000 simulated World Cups.
+
+This does not mean the team is predicted to win a specific real-world match or that the outcome is deterministic. It means that, under the model assumptions, input data, bracket structure, and simulated scoring distributions, the team wins in about 7,500 of 50,000 plausible tournament paths.
+
+Champion probabilities sum to `1.0` across all teams because exactly one team wins each simulated tournament. Advancement probabilities for earlier stages are interpreted similarly, but their sums vary by stage structure. For example, many teams can reach the knockout stage in a single simulation, while only two teams can be finalists and only one can be champion.
+
+Small differences should be read with care. A team estimated at 8.2% and another at 7.9% should generally be treated as having similar title prospects, especially when accounting for model uncertainty, input-data limitations, and Monte Carlo sampling error.
+
+### Model Limitations
+
+The simulator is a probabilistic research prototype and should be interpreted as a structured scenario engine, not as a complete forecasting system for all real-world tournament dynamics.
+
+Current limitations include:
+
+- the model does not account for player injuries, late squad changes, or fitness issues before and during the tournament;
+- the simulation does not currently model suspensions caused by accumulated yellow cards or red cards across matches;
+- sudden coaching changes, tactical shifts, federation-level disruptions, and other off-field events are not explicitly represented;
+- team strength is inferred from historical international results and Elo dynamics, which may lag behind abrupt changes in squad quality;
+- match conditions such as weather, travel fatigue, pitch quality, and venue-specific effects are not modeled at full granularity;
+- the Dixon-Coles score model captures low-score dependency and team strength, but it does not directly encode player-level chance creation, lineup selection, or tactical matchups;
+- Monte Carlo probabilities depend on the number of simulations, so very small probability differences can be sensitive to sampling noise.
+
+These constraints are intentional trade-offs for a transparent, reproducible, and computationally efficient tournament simulator. The outputs are best used for comparative analysis, sensitivity testing, and understanding the range of plausible tournament paths rather than as exact point predictions.
+
+## Data Sourcing and Governance
+
+The historical match data used by this project is stored in `data/results.csv`. This file is derived from a public international football results dataset originally published by Mart Jürisoo on Kaggle: https://www.kaggle.com/datasets/martj42/international-football-results-from-1872-to-2017.
+
+The dataset covers international match results from 1872 through 2017. In this repository, the model does not treat all matches equally: a temporal decay scheme is applied so older matches have less influence, and the Dixon-Coles training window is explicitly restricted.
+
+- `DC_TRAIN_MIN_DATE = "2006-01-01"` limits Dixon-Coles training to matches from 1 January 2006 onward, focusing the goal model on the modern era of football.
+- The same contemporary focus also applies to the Elo component through the model's temporal weighting and path logic, reducing the impact of much older historical results.
+- A time-decay half-life of 2.5 years is used, which means the effective weight of a match declines by roughly half every 2.5 years. This decay mechanism preserves information from the broader historical record while prioritizing more recent performance.
+
+This governance approach ensures the training data is grounded in a well-documented public source while keeping the fitted model aligned with modern international football dynamics.
+
 ## Project Structure
 
 ```text

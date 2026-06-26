@@ -20,7 +20,7 @@ _POWERS = (1 << np.arange(12)).astype(np.int64)
 def simulate(tables, n_sims: int = None, seed: int = None) -> Dict[str, np.ndarray]:
     n_sims = config.N_SIMS if n_sims is None else n_sims
     seed = config.SEED if seed is None else seed
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(seed)  # NumPy Generator para reprodutibilidade estrita
     n = tables.n
     elo_sims = np.full((n_sims, n), tables.initial_elos, dtype=float)
     alloc_table = wc2026.build_alloc_table()
