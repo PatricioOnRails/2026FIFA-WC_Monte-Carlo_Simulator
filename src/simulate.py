@@ -5,7 +5,7 @@ classificar, vencer o grupo, alcançar cada fase do mata-mata e ser campeã.
 """
 from __future__ import annotations
 
-from typing import Dict
+from typing import Dict, List
 
 import numpy as np
 import pandas as pd
@@ -22,6 +22,10 @@ def simulate(tables, n_sims: int = None, seed: int = None) -> Dict[str, np.ndarr
     seed = config.SEED if seed is None else seed
     rng = np.random.default_rng(seed)  # NumPy Generator para reprodutibilidade estrita
     n = tables.n
+    match_predictions: List[dict] = []
+
+    def collect_prediction(row: dict) -> None:
+        match_predictions.append(row)
     elo_sims = np.full((n_sims, n), tables.initial_elos, dtype=float)
     alloc_table = wc2026.build_alloc_table()
 
@@ -29,7 +33,13 @@ def simulate(tables, n_sims: int = None, seed: int = None) -> Dict[str, np.ndarr
     group_idx = np.array([[t.idx for t in names.GROUPS[L]] for L in LETTERS], dtype=np.int32)
 
     place_team, place_pts, place_gd, place_gf = tournament.simulate_groups(
-        tables, group_idx, rng, n_sims, elo_sims=elo_sims
+        tables,
+        group_idx,
+        rng,
+        n_sims,
+        elo_sims=elo_sims,
+        match_prediction_callback=collect_prediction,
+        group_labels=tuple(LETTERS),
     )
     W = place_team[:, 0]   # (12, n_sims) vencedores de grupo
     R = place_team[:, 1]   # vices
@@ -60,30 +70,54 @@ def simulate(tables, n_sims: int = None, seed: int = None) -> Dict[str, np.ndarr
     win: Dict[int, np.ndarray] = {}
     los: Dict[int, np.ndarray] = {}
 
-    def ko(mid, t1, t2):
-        _, _, w = play(t1, t2)
+    def ko(mid, t1, t2, stage: str, group: str = ""):
+        _, _, w = play(
+            t1,
+            t2,
+            stage=stage,
+            group=group,
+            match_id=mid,
+        )
         win[mid] = w
         los[mid] = np.where(w == t1, t2, t1)
 
-    def play(t1, t2):
+    def play(t1, t2, stage: str, group: str = "", match_id: int = None):
         return tournament.play_matches(
-            tables, t1, t2, rng.random(n_sims), knockout=True,
-            u_draw=rng.random(n_sims), elo_sims=elo_sims
+            tables,
+            t1,
+            t2,
+            rng.random(n_sims),
+            knockout=True,
+            u_draw=rng.random(n_sims),
+            elo_sims=elo_sims,
+            probability_callback=collect_prediction,
+            match_meta={
+                "MatchID": str(match_id),
+                "Stage": stage,
+                "Group": group,
+            },
         )
 
     for mid, sa, sb in R32:
-        ko(mid, slot_team(sa), slot_team(sb))
-    for rd in (R16, QF, SF):
+        ko(mid, slot_team(sa), slot_team(sb), "Round of 32")
+    for rd, stage_name in ((R16, "Round of 16"), (QF, "Quarterfinal"), (SF, "Semifinal")):
         for mid, x, y in rd:
-            ko(mid, win[x], win[y])
+            ko(mid, win[x], win[y], stage=stage_name)
     fid, fx, fy = FINAL
-    ko(fid, win[fx], win[fy])
+    ko(fid, win[fx], win[fy], "Final")
     champion = win[fid]
     runner = los[fid]
     tid, tx, ty = THIRD_PLACE
     _, _, third_place = tournament.play_matches(
-        tables, los[tx], los[ty], rng.random(n_sims), knockout=True,
-        u_draw=rng.random(n_sims), elo_sims=elo_sims
+        tables,
+        los[tx],
+        los[ty],
+        rng.random(n_sims),
+        knockout=True,
+        u_draw=rng.random(n_sims),
+        elo_sims=elo_sims,
+        probability_callback=collect_prediction,
+        match_meta={"MatchID": "103", "Stage": "Third Place", "Group": ""},
     )
 
     # --------------------------------------------------------- agregação
@@ -94,6 +128,7 @@ def simulate(tables, n_sims: int = None, seed: int = None) -> Dict[str, np.ndarr
     knockout_teams = [W[g] for g in range(12)] + [R[g] for g in range(12)] + [third_slot[s] for s in range(8)]
     res = {
         "group_winner": freq(*[W[g] for g in range(12)]),
+        "match_predictions": match_predictions,
         "advance": freq(*knockout_teams),                 # chegou ao mata-mata (R32)
         "reach_r16": freq(*[win[m] for m in range(73, 89)]),
         "reach_qf": freq(*[win[m] for m in range(89, 97)]),

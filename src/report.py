@@ -4,6 +4,7 @@ com o chaveamento oficial e o 'caminho mais provável' (favorito avança).
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import Dict, List
 
 import numpy as np
@@ -102,6 +103,28 @@ def deterministic_bracket(tables) -> Dict:
 
 
 # ----------------------------------------------------- saídas de probabilidade
+def write_match_predictions(rows: List[Dict]) -> Path:
+    os.makedirs(config.OUTPUT_DIR, exist_ok=True)
+    columns = [
+        "MatchID",
+        "Stage",
+        "Group",
+        "HomeTeam",
+        "AwayTeam",
+        "HomeWinProbability",
+        "DrawProbability",
+        "AwayWinProbability",
+        "ExpectedGoalsHome",
+        "ExpectedGoalsAway",
+        "MostLikelyScore",
+        "MostLikelyScoreProbability",
+    ]
+    df = pd.DataFrame(rows, columns=columns)
+    out_path = Path(config.OUTPUT_DIR) / "match_predictions.csv"
+    df.to_csv(out_path, index=False)
+    return out_path
+
+
 def write_probability_outputs(res: Dict) -> pd.DataFrame:
     os.makedirs(config.OUTPUT_DIR, exist_ok=True)
     df = simulate.to_dataframe(res)
@@ -252,5 +275,6 @@ def fill_jogos_md(tables, res: Dict, mc_df: pd.DataFrame) -> None:
 
 def generate(tables, res: Dict) -> pd.DataFrame:
     mc_df = write_probability_outputs(res)
+    write_match_predictions(res.get("match_predictions", []))
     fill_jogos_md(tables, res, mc_df)
     return mc_df

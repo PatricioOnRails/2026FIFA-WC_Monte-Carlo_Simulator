@@ -5,11 +5,11 @@ n_sims), amostrando placares a partir da CDF pré-computada em Tables.
 """
 from __future__ import annotations
 
-from typing import Optional, Tuple
+from typing import Callable, Optional, Tuple
 
 import numpy as np
 
-from . import config
+from . import config, names
 from .brackets.wc2026 import GROUP_FIXTURES
 
 _FACTORIALS = np.array([1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800], dtype=float)
@@ -131,6 +131,8 @@ def play_matches(
     knockout: bool = False,
     u_draw: Optional[np.ndarray] = None,
     elo_sims: Optional[np.ndarray] = None,
+    probability_callback: Optional[Callable[[dict], None]] = None,
+    match_meta: Optional[dict] = None,
 ) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
     """Amostra o placar de t1 vs t2 (arrays de índices de time).
 
@@ -139,10 +141,36 @@ def play_matches(
     """
     if elo_sims is None:
         cdfs = tables.cdf[t1, t2]                  # (S, ncell)
-        la = lb = None
+        la = tables.lam_a[t1, t2]
+        lb = tables.lam_b[t1, t2]
     else:
         la, lb = dynamic_blended_lambdas(tables, t1, t2, elo_sims, knockout)
         cdfs = fast_vectorized_dc_cdf(la, lb, tables.rho, config.MAX_GOALS)
+
+    if probability_callback is not None and match_meta is not None:
+        grid = _fast_vectorized_dc_grid(la, lb, tables.rho, config.MAX_GOALS)
+        mean_grid = grid.mean(axis=0)
+        home_win = float(np.tril(mean_grid, -1).sum())
+        draw = float(np.trace(mean_grid))
+        away_win = float(np.triu(mean_grid, 1).sum())
+        score_grid = mean_grid.copy()
+        if knockout:
+            np.fill_diagonal(score_grid, 0.0)
+        modal_h, modal_a = np.unravel_index(int(np.argmax(score_grid)), score_grid.shape)
+        probability_callback({
+            "MatchID": str(match_meta.get("MatchID", "")),
+            "Stage": match_meta.get("Stage", ""),
+            "Group": match_meta.get("Group", ""),
+            "HomeTeam": names.TEAMS[int(t1[0])].pt,
+            "AwayTeam": names.TEAMS[int(t2[0])].pt,
+            "HomeWinProbability": home_win,
+            "DrawProbability": draw,
+            "AwayWinProbability": away_win,
+            "ExpectedGoalsHome": float(np.mean(la)),
+            "ExpectedGoalsAway": float(np.mean(lb)),
+            "MostLikelyScore": f"{modal_h}-{modal_a}",
+            "MostLikelyScoreProbability": float(score_grid[modal_h, modal_a]),
+        })
     cells = (u_score[:, None] > cdfs).sum(axis=1)  # 1º índice com cdf >= u
     cells = np.clip(cells, 0, cdfs.shape[1] - 1)
     g1 = (cells // tables.gdim).astype(np.int16)
@@ -163,7 +191,15 @@ def play_matches(
     return g1, g2, winner.astype(t1.dtype)
 
 
-def simulate_groups(tables, group_idx: np.ndarray, rng, n_sims: int, elo_sims=None):
+def simulate_groups(
+    tables,
+    group_idx: np.ndarray,
+    rng,
+    n_sims: int,
+    elo_sims=None,
+    match_prediction_callback: Optional[Callable[[dict], None]] = None,
+    group_labels: Optional[Tuple[str, ...]] = None,
+):
     """Simula a fase de grupos (grupos de 4) para n_sims realizações.
 
     group_idx : (NG, 4) índices globais dos times de cada grupo.
@@ -172,6 +208,7 @@ def simulate_groups(tables, group_idx: np.ndarray, rng, n_sims: int, elo_sims=No
     pontos > saldo > gols pró > aleatório residual.
     """
     NG = group_idx.shape[0]
+    labels = tuple(group_labels or tuple(f"G{g}" for g in range(NG)))
     place_team = np.zeros((NG, 4, n_sims), dtype=np.int32)
     place_pts = np.zeros((NG, 4, n_sims))
     place_gd = np.zeros((NG, 4, n_sims))
@@ -182,10 +219,22 @@ def simulate_groups(tables, group_idx: np.ndarray, rng, n_sims: int, elo_sims=No
         pts = np.zeros((4, n_sims))
         gf = np.zeros((4, n_sims))
         ga = np.zeros((4, n_sims))
-        for hp, ap in GROUP_FIXTURES:
+        for fixture_idx, (hp, ap) in enumerate(GROUP_FIXTURES):
             t1 = np.full(n_sims, teams[hp], dtype=np.int32)
             t2 = np.full(n_sims, teams[ap], dtype=np.int32)
-            g1, g2, _ = play_matches(tables, t1, t2, rng.random(n_sims), elo_sims=elo_sims)
+            g1, g2, _ = play_matches(
+                tables,
+                t1,
+                t2,
+                rng.random(n_sims),
+                elo_sims=elo_sims,
+                probability_callback=match_prediction_callback,
+                match_meta={
+                    "MatchID": f"{labels[g]}-{fixture_idx + 1:02d}",
+                    "Stage": "Group",
+                    "Group": labels[g],
+                },
+            )
             gf[hp] += g1; ga[hp] += g2
             gf[ap] += g2; ga[ap] += g1
             pts[hp] += np.where(g1 > g2, 3, np.where(g1 == g2, 1, 0))

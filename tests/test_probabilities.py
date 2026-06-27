@@ -1,8 +1,10 @@
 import math
 
 import numpy as np
+import pandas as pd
 import pytest
 
+from src import config, data_loader, model, names, report, simulate
 from src.tournament import _fast_vectorized_dc_grid, fast_vectorized_dc_cdf, update_elo_state
 
 
@@ -83,3 +85,61 @@ def test_update_elo_state_remains_finite_for_extreme_scores():
     assert elo_sims[0, 1] < before[0, 1]
     assert elo_sims[2, 0] < before[2, 0]
     assert elo_sims[2, 1] > before[2, 1]
+
+
+def test_write_match_predictions_creates_csv_with_expected_columns(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "OUTPUT_DIR", str(tmp_path))
+    rows = [
+        {
+            "MatchID": 1,
+            "Stage": "Group",
+            "Group": "A",
+            "HomeTeam": "Brazil",
+            "AwayTeam": "Argentina",
+            "HomeWinProbability": 0.42,
+            "DrawProbability": 0.28,
+            "AwayWinProbability": 0.30,
+            "ExpectedGoalsHome": 1.8,
+            "ExpectedGoalsAway": 1.5,
+            "MostLikelyScore": "1-1",
+            "MostLikelyScoreProbability": 0.19,
+        }
+    ]
+
+    out_path = report.write_match_predictions(rows)
+
+    assert out_path == tmp_path / "match_predictions.csv"
+    df = pd.read_csv(out_path)
+    assert list(df.columns) == [
+        "MatchID",
+        "Stage",
+        "Group",
+        "HomeTeam",
+        "AwayTeam",
+        "HomeWinProbability",
+        "DrawProbability",
+        "AwayWinProbability",
+        "ExpectedGoalsHome",
+        "ExpectedGoalsAway",
+        "MostLikelyScore",
+        "MostLikelyScoreProbability",
+    ]
+    assert len(df) == 1
+
+
+def test_simulate_collects_match_predictions_for_official_matches():
+    df = data_loader.load_matches()
+    mm = model.MatchModel().fit(df)
+    tables = mm.build_tables(names.TEAMS)
+    res = simulate.simulate(tables, n_sims=20, seed=7)
+
+    assert "match_predictions" in res
+    rows = res["match_predictions"]
+    assert len(rows) == 104
+
+    for row in rows:
+        assert row["HomeWinProbability"] + row["DrawProbability"] + row["AwayWinProbability"] == pytest.approx(1.0, abs=1e-6)
+        assert row["ExpectedGoalsHome"] > 0.0
+        assert row["ExpectedGoalsAway"] > 0.0
+        assert row["MostLikelyScore"]
+        assert 0.0 <= row["MostLikelyScoreProbability"] <= 1.0
