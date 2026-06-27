@@ -199,7 +199,7 @@ After each full run, the project writes its generated artifacts to `outputs/`. T
 | `outputs/figs/reliability.png` | Reliability diagram produced by the backtest, comparing predicted probabilities with observed frequencies. |
 | `outputs/_tables_cache.pkl` | Local cache of fitted model tables used by `python run.py --fast`. This is a generated performance artifact and should not be committed. |
 
-The most important analytical output is `stage_probabilities.csv`, because it preserves the full probability distribution by team and stage. The Markdown outputs are primarily for human-readable reporting. The new `match_predictions.csv` file is the companion artifact for match-level evaluation and can be used to compare each pre-match forecast against the actual result.
+The most important analytical output is stage_probabilities.csv, because it preserves the full probability distribution by team and stage. The Markdown outputs are primarily intended for human-readable reporting. The match_predictions.csv file complements these artifacts by recording match-level probability snapshots generated throughout the Monte Carlo simulation, making it useful for model inspection, debugging, probability analysis, and future development of match-level evaluation workflows.
 
 ## Installation
 
