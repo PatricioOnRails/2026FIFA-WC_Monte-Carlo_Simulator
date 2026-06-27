@@ -63,6 +63,10 @@ The Dixon-Coles and Elo components are blended dynamically:
 
 The score CDF is generated on demand with NumPy. The implementation computes independent Poisson score probabilities, applies the Dixon-Coles tau correction for low-score cells, normalizes the grid, flattens it, and samples scores from the cumulative distribution. This avoids calling `penaltyblog` inside the simulation loop while still preserving Dixon-Coles behavior.
 
+### Match-Level Probability Engine
+
+The match-level probability calculation is now encapsulated in `predict.py`. This module is shared by the simulator and future prediction pipelines, improving code reusability without altering the underlying statistical methodology.
+
 ### Output Examples
 
 After completing 50,000 Monte Carlo simulations, the reporting layer aggregates tournament outcomes into machine-readable probability tables and summary artifacts. A representative JSON-style output would follow the structure below:
@@ -176,6 +180,7 @@ This governance approach ensures the training data is grounded in a well-documen
     ├── names.py              # Team mapping and canonical 2026 team index
     ├── model.py              # Dixon-Coles fitting, Elo fitting, and table construction
     ├── match.py              # Match-level probability helpers using penaltyblog
+    ├── predict.py            # Shared match-level probability engine used by the Monte Carlo simulator and future official match prediction workflows
     ├── tournament.py         # Vectorized match simulation, dynamic CDFs, and Elo updates
     ├── simulate.py           # Full FIFA WC 2026 Monte Carlo tournament engine
     ├── report.py             # Markdown/CSV output generation

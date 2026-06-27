@@ -5,7 +5,8 @@ import pandas as pd
 import pytest
 
 from src import config, data_loader, model, names, report, simulate
-from src.tournament import _fast_vectorized_dc_grid, fast_vectorized_dc_cdf, update_elo_state
+from src.predict import fast_vectorized_dc_grid
+from src.tournament import fast_vectorized_dc_cdf, update_elo_state
 
 
 def _truncated_poisson_grid(la, lb, max_goals):
@@ -37,7 +38,7 @@ def test_dixon_coles_low_score_cells_receive_rho_correction():
     rho = -0.12
     max_goals = 10
 
-    dc_grid = _fast_vectorized_dc_grid(la, lb, rho=rho, max_goals=max_goals)[0]
+    dc_grid = fast_vectorized_dc_grid(la, lb, rho=rho, max_goals=max_goals)[0]
     poisson_grid = _truncated_poisson_grid(la[0], lb[0], max_goals)
 
     tau = np.ones_like(poisson_grid)
